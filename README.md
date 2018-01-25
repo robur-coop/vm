@@ -28,6 +28,7 @@ Therefore, it:
 
 This is for an install from scratch, as root:
 
+- Add a `_vm` user with a system UID
 - `mkdir -p /etc/vm/vm.d`
 - `mkdir -p /var/lib/vm/chroot`
 - `cp config.sh.dist /etc/vm/config.sh`, edit to suit.
