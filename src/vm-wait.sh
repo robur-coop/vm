@@ -60,7 +60,7 @@ vm_is_running "${vm_ID}" || die "VM not running: '${vm_ID}'"
 type vmid_to_dns >/dev/null 2>&1 \
     || die "vmid_to_dns() not defined"
 vmid_to_dns
-[ -z "${vm_DNS_NAME}" ] && die "Cannot translate '${vmID}' to DNS name"
+[ -z "${vm_DNS_NAME}" ] && die "Cannot translate '${vm_ID}' to DNS name"
 
 while ! vm_IP_ADDRESS=$(host -t A -4 -r "${vm_DNS_NAME}"); do
     sleep 1
