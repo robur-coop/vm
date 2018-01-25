@@ -1,0 +1,51 @@
+#
+# Configuration common to all VMs on this host
+#
+
+# Full path to per-VM configuration directory
+conf_DIR=/etc/vm/vm.d
+
+# Full path to runtime state directory
+conf_STATE_DIR=/var/run
+
+# User ID/name to run QEMU under
+conf_VMM_USER=_vm
+
+# Group to be given access to console/monitor sockets
+# XXX Not possible with the current setup due to QEMU stupidity
+# conf_VMM_ADMIN_GROUP=root
+
+# Full path to QEMU chroot, must exist and be empty
+conf_VMM_CHROOT=/var/lib/vm/chroot
+
+# LVM volume group for VM images
+conf_LVM_VG=tick-vg
+
+# If set, specifies the LVM thin pool name for VM images.
+# Must be part of the same volume group as ${conf_LVM_VG}.
+# Without a thin pool set, "vm clone" is not supported.
+conf_LVM_POOL=vmpool0
+
+# Parent network interface for macvlan
+conf_NET_IF=vlan100
+
+# Guest OUI prefix
+conf_NET_GUEST_OUI=12:00:00
+
+# Translate ${vm_ID} to a DNS name, return in ${vm_DNS_NAME}.
+# If you don't want/need to use "vm wait", comment out this function.
+vmid_to_dns()
+{
+    local p
+    local q
+    p=$(echo "${conf_NET_GUEST_OUI}" | tr : -)
+    q=$(echo "${vm_ID}" | cut --output-delimiter=- -b 3-4,5-6,7-8)
+    vm_DNS_NAME="${p}-${q}.lan1"
+}
+
+#
+# Defaults for newly created VMs
+#
+conf_VM_MEMSZ=1G
+conf_VM_DISKSZ=4G
+conf_VM_VCPUS=1
