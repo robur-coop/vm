@@ -23,6 +23,7 @@ Therefore, it:
 
 - Debian GNU/Linux 9.x `x86_64` as a host system.
 - LVM, `thin-provisioning-tools`, `socat`, `qemu-system-x86`.
+- `ssvncviewer` (optional).
 
 ### Rough steps
 
@@ -33,6 +34,11 @@ This is for an install from scratch, as root:
 - `mkdir -p /var/lib/vm/chroot`
 - `cp config.sh.dist /etc/vm/config.sh`, edit to suit.
 - `make install`
+
+For `vm console` to work directly on the host, install `ssvncviewer`.  If you
+only need to access consoles via the SSH forwarding functionality, copy
+`src/vm-console.sh` to your client host and install `ssvncviewer` there. In
+either case, you do not need the JRE dependency of `ssvncviewer`.
 
 ## Known issues/caveats
 
