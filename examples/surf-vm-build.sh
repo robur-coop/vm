@@ -7,6 +7,9 @@
 #     $ GITHUB_USER=... GITHUB_TOKEN=... surf-run \
 #         -r https://github.com/USER/REPO -- /path/to/surf-vm-build
 #
+# Optionally, set SURF_LOGDIR to a directory where build job outputs will
+# be logged. If unset they go to stdout, which is probably not what you want.
+#
 # You will want to modify the list of builds and VM templates at the end
 # of this script (see the calls to do_build()).
 
@@ -14,7 +17,8 @@ prog_NAME=$(basename $0)
 
 log()
 {
-    echo "$(date -Iseconds) ${prog_NAME}[$$]: $@" 1>&2
+    echo "$(date -Iseconds) ${prog_NAME}[$$]:" \
+        "(${SURF_BUILD_NAME:-none}) $@" 1>&2
 }
 
 err()
@@ -80,7 +84,7 @@ do_build()
     SURF_BUILD_NAME="$1"
     vm_TEMPLATE="$2"
 
-    sepa
+    #sepa
     log "New job: ${SURF_NWO}@${SURF_SHA1}"
     log "Github context: ${SURF_BUILD_NAME}, VM template: ${vm_TEMPLATE}"
 
@@ -94,7 +98,18 @@ do_build()
         || gh_die "Wait ${vm_ID} failed ($?)"
     log "Boot complete, IP address: ${vm_IP}"
 
-    sepa
+    #sepa
+
+    # Log job output in ${SURF_LOGDIR} if set.
+    if [ -n "${SURF_LOGDIR}" -a -d "${SURF_LOGDIR}" ]; then
+        log_FILE="${SURF_LOGDIR}/${SURF_SHA1}.$(date +%s).$$.${SURF_BUILD_NAME}"
+        log "Logging job output to: ${log_FILE}"
+        exec 3>${log_FILE}
+        exec 4>&3
+    else
+        exec 3>&1
+        exec 4>&2
+    fi
 
     gh_status pending "Building on ${vm_ID}"
     # This command can exit with the following status:
@@ -103,13 +118,17 @@ do_build()
     # 124: Timed out
     # 255: The SSH connection failed
     # (surf-build exits with 255 if the job failed, hence the status-juggling)
+    # (XXX: This cannot distinguish between "the surf-build invocation failed"
+    # and "the surf-build job failed)
     timeout 300 ssh ${vm_IP} env - \
-            PATH="/home/build/node_modules/.bin:/usr/local/bin:/usr/bin:/bin" \
+            HOME="/home/build" \
+            PATH="/home/build/bin:/home/build/node_modules/.bin:/usr/local/bin:/usr/bin:/bin" \
             TMPDIR="/home/build" \
-            GITHUB_TOKEN=${GITHUB_TOKEN} \
-            SURF_REPO=${SURF_REPO} \
-            SURF_SHA1=${SURF_SHA1} \
-            surf-build -n "${SURF_BUILD_NAME}" \|\| exit 2
+            GITHUB_TOKEN="${GITHUB_TOKEN}" \
+            SURF_REPO="${SURF_REPO}" \
+            SURF_SHA1="${SURF_SHA1}" \
+            surf-build -n "${SURF_BUILD_NAME}" \|\| exit 2 \
+            1>&3 2>&4
     job_STATUS=$?
     # We only want to publish timeouts or SSH failures
     case "${job_STATUS}" in
@@ -124,7 +143,7 @@ do_build()
             ;;
     esac
 
-    sepa
+    #sepa
     log "Exit status: ${job_STATUS}"
 
     if [ -n "${job_TIMEOUT}" ]; then
@@ -139,8 +158,11 @@ do_build()
     fi
     sudo vm remove ${vm_ID}
     vm_ID=
+    log "Done"
 }
 
-do_build Test ci-solo5-debian9
+( do_build Test-Debian9 ci-solo5-debian9-fix ) &
+( do_build Test-FreeBSD11 ci-solo5-freebsd11 ) &
 
-log "Done"
+wait
+exit 0
