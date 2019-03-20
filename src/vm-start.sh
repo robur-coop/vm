@@ -115,6 +115,7 @@ ${qemu_SMP}
 -drive if=none,id=sda,file=${conf_VM_DISK_DEV},format=raw,discard=on
 -device virtio-scsi-pci,id=scsi0
 -device scsi-hd,drive=sda
+-device virtio-rng-pci
 -monitor unix:${conf_STATE_DIR}/${vm_ID}-qemu.sock,server,nowait
 -vnc unix:${conf_STATE_DIR}/${vm_ID}-vnc.sock
 -pidfile ${conf_STATE_DIR}/${vm_ID}-qemu.pid
