@@ -81,7 +81,7 @@ trap cleanup 0 INT TERM
 prog_TMPDIR=$(mktemp -d ${conf_DIR:?}/clone.XXXXXXXX)
 
 # Generate a random VM ID for the new VM and use it to derive MAC addresses
-vm_ID_RAW="$(od -A n -N 3 -t x1 /dev/urandom)"
+vm_ID_RAW="$(od -A n -N 3 -t x1 /dev/urandom | cut -c 2-)"
 vm_ID="vm$(echo "${vm_ID_RAW}" | tr -d ' ')"
 conf_VM_GUEST_MAC="${conf_NET_GUEST_OUI:?}:$(echo "${vm_ID_RAW}" | sed -e 's/ /:/g')"
 
