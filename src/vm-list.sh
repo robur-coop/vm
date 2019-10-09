@@ -45,11 +45,14 @@ shift $((OPTIND-1))
 
 [ $# -ne 0 ] && usage
 
-vms=$(ls -d ${conf_DIR}/vm* 2>/dev/null)
+vms=$(ls -d "${conf_DIR:?}/"vm* 2>/dev/null)
 for vm_DIR in ${vms}; do
     [ ! -d "${vm_DIR}" ] && die "Invalid configuration: \"${vm_DIR}\""
     [ ! -f "${vm_DIR}/name" ] && die "Invalid configuration: \"${vm_DIR}\""
     [ ! -f "${vm_DIR}/config.sh" ] && die "Invalid configuration: \"${vm_DIR}\""
-    echo "$(basename "${vm_DIR}") ($(cat "${vm_DIR}/name"))"
 done
+
+(for vm_DIR in ${vms}; do
+    echo "$(basename "${vm_DIR}") ($(cat "${vm_DIR}/name"))"
+done) | sort -k2 -V
 exit 0
