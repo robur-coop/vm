@@ -43,4 +43,4 @@ if [ $# -gt 0 ]; then
     esac
 fi
 
-exec ps -U "${conf_VMM_USER}" "$@"
+exec ps -U "${conf_VMM_USER}" -o pid,time,command "$@"
