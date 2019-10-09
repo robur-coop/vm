@@ -4,10 +4,12 @@
 # List all configured VMs
 #
 
-prog_NAME=$(basename $0)
-prog_DIR=$(readlink -f $(dirname $0))
+prog_NAME=$(basename "$0")
+prog_DIR=$(readlink -f "$(dirname "$0")")
 prog_LIBDIR=${prog_DIR}
-. ${prog_LIBDIR}/functions.sh
+# shellcheck source=src/functions.sh
+. "${prog_LIBDIR}/functions.sh"
+# shellcheck source=config.sh.dist
 . /etc/vm/config.sh
 
 prog_SUMMARY="List configured virtual machines"
@@ -39,7 +41,7 @@ while getopts "Hh" opt; do
             ;;
     esac
 done
-shift $((${OPTIND}-1))
+shift $((OPTIND-1))
 
 [ $# -ne 0 ] && usage
 
@@ -48,6 +50,6 @@ for vm_DIR in ${vms}; do
     [ ! -d "${vm_DIR}" ] && die "Invalid configuration: \"${vm_DIR}\""
     [ ! -f "${vm_DIR}/name" ] && die "Invalid configuration: \"${vm_DIR}\""
     [ ! -f "${vm_DIR}/config.sh" ] && die "Invalid configuration: \"${vm_DIR}\""
-    echo "$(basename ${vm_DIR}) ($(cat ${vm_DIR}/name))"
+    echo "$(basename "${vm_DIR}") ($(cat "${vm_DIR}/name"))"
 done
 exit 0

@@ -22,4 +22,7 @@ install:
 	install -m 0644 $(PROG_LIB) $(PREFIX)/share/vm
 	install -m 0755 $(PROG_SUB) $(PREFIX)/share/vm
 
-.PHONY: all install
+check:
+	shellcheck -ax ${PROG_MAIN} ${PROG_SUB}
+
+.PHONY: all install check

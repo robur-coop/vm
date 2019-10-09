@@ -4,10 +4,12 @@
 # Wait for a VM to come online
 #
 
-prog_NAME=$(basename $0)
-prog_DIR=$(readlink -f $(dirname $0))
+prog_NAME=$(basename "$0")
+prog_DIR=$(readlink -f "$(dirname "$0")")
 prog_LIBDIR=${prog_DIR}
-. ${prog_LIBDIR}/functions.sh
+# shellcheck source=src/functions.sh
+. "${prog_LIBDIR}/functions.sh"
+# shellcheck source=config.sh.dist
 . /etc/vm/config.sh
 
 prog_SUMMARY="Wait for a virtual machine to come online"
@@ -50,7 +52,7 @@ while getopts "Hhp:" opt; do
             ;;
     esac
 done
-shift $((${OPTIND}-1))
+shift $((OPTIND-1))
 
 [ $# -ne 1 ] && usage
 safe_lookup_vm "$1" || die "No such VM: '$1'"
@@ -71,5 +73,4 @@ while ! socat /dev/null "TCP4:${vm_IP_ADDRESS}:${opt_PORT}"; do
     sleep 1
 done
 
-echo ${vm_IP_ADDRESS}
-
+echo "${vm_IP_ADDRESS}"

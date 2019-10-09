@@ -3,17 +3,16 @@
 # NOTE: This subcommand does not rely on any global configuration or shared
 # functions. This is so that it can be easily installed standalone on client
 # systems to provide the SSH forwarding functionality.
-prog_NAME=$(basename $0)
-prog_DIR=$(readlink -f $(dirname $0))
+prog_NAME=$(basename "$0")
 
 err()
 {
-    echo "${prog_NAME}: ERROR: $@" 1>&2
+    echo "${prog_NAME}: ERROR: " "$@" 1>&2
 }
 
 warn()
 {
-    echo "${prog_NAME}: WARNING: $@" 1>&2
+    echo "${prog_NAME}: WARNING: " "$@" 1>&2
 }
 
 die()
@@ -57,7 +56,7 @@ while getopts "Hhft:" opt; do
             ;;
     esac
 done
-shift $((${OPTIND}-1))
+shift $((OPTIND-1))
 
 [ $# -lt 1 ] && usage
 
@@ -71,9 +70,9 @@ fi
 if [ -n "${HOST}" ]; then
     cleanup()
     {
-	if [ -n "${TMPDIR}" -a -d "${TMPDIR}" ]; then
-	    [ -S "${CONTROL}" ] && ssh -S ${CONTROL} -O exit localhost
-	    rm -rf ${TMPDIR}
+	if [ -n "${TMPDIR}" ] && [ -d "${TMPDIR}" ]; then
+	    [ -S "${CONTROL}" ] && ssh -S "${CONTROL}" -O exit localhost
+	    rm -rf "${TMPDIR}"
 	fi
     }
     trap cleanup 0 INT TERM 
@@ -82,12 +81,12 @@ if [ -n "${HOST}" ]; then
     LOCAL=${TMPDIR}/vnc.sock
     REMOTE=/var/run/${vm_ID}-vnc.sock
 
-    ssh -nMNfS ${CONTROL} -o ExitOnForwardFailure=yes \
-	-L ${LOCAL}:${REMOTE} \
-	root@${HOST} \
+    ssh -nMNfS "${CONTROL}" -o ExitOnForwardFailure=yes \
+	-L "${LOCAL}:${REMOTE}" \
+	"root@${HOST}" \
 	|| exit 1
 else
     LOCAL=/var/run/${vm_ID}-vnc.sock
 fi
 
-ssvncviewer unix=${LOCAL} "$@"
+ssvncviewer "unix=${LOCAL}" "$@"

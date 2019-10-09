@@ -4,10 +4,12 @@
 # Create a new VM
 #
 
-prog_NAME=$(basename $0)
-prog_DIR=$(readlink -f $(dirname $0))
+prog_NAME=$(basename "$0")
+prog_DIR=$(readlink -f "$(dirname "$0")")
 prog_LIBDIR=${prog_DIR}
-. ${prog_LIBDIR}/functions.sh
+# shellcheck source=src/functions.sh
+. "${prog_LIBDIR}/functions.sh"
+# shellcheck source=config.sh.dist
 . /etc/vm/config.sh
 
 prog_SUMMARY="Create a new virtual machine"
@@ -24,9 +26,9 @@ entirely of alphanumeric characters and '-', and must be unique.
 
 Available OPTIONs:
   -h   display this help
-  -m   configure with MEMSZ [M|G] of memory (default ${conf_VM_MEMSZ})
-  -d   allocate and configure DISKSZ [M|G] of disk (default ${conf_VM_DISKSZ})
-  -c   configure VCPUS number of VCPUs (default ${conf_VM_VCPUS})
+  -m   configure with MEMSZ [M|G] of memory (default ${conf_VM_MEMSZ:?})
+  -d   allocate and configure DISKSZ [M|G] of disk (default ${conf_VM_DISKSZ:?})
+  -c   configure VCPUS number of VCPUs (default ${conf_VM_VCPUS:?})
 EOM
     exit 1
 }
@@ -54,13 +56,13 @@ while getopts "Hhm:d:c:" opt; do
             ;;
     esac
 done
-shift $((${OPTIND}-1))
+shift $((OPTIND-1))
 
 [ $# -ne 1 ] && usage
 arg_is_safe "$1" || die "Invalid characters in NAME parameter"
 (echo "$1" | grep -q '^vm[0-9]\{6\}$') && die "NAME cannot be a VMID"
 vm_NAME="$1"
-vm_NAME_LINK="${conf_DIR}/by-name/${vm_NAME}"
+vm_NAME_LINK="${conf_DIR:?}/by-name/${vm_NAME}"
 [ -L "${vm_NAME_LINK}" ] && die "The NAME '${vm_NAME}' is not unique"
 
 # Use a temporary working directory during creation
@@ -68,35 +70,35 @@ vm_NAME_LINK="${conf_DIR}/by-name/${vm_NAME}"
 # XXX unexpected goes wrong we'd rather leak an LV than lose data.
 cleanup()
 {
-    if [ -n "${prog_TMPDIR}" -a -d "${prog_TMPDIR}" ]; then
+    if [ -n "${prog_TMPDIR}" ] && [ -d "${prog_TMPDIR}" ]; then
         [ -L "${vm_NAME_LINK}" ] && rm "${vm_NAME_LINK}"
-        rm -rf ${prog_TMPDIR}
+        rm -rf "${prog_TMPDIR}"
     fi
 }
 trap cleanup 0 INT TERM
-prog_TMPDIR=$(mktemp -d ${conf_DIR}/create.XXXXXXXX)
+prog_TMPDIR=$(mktemp -d ${conf_DIR:?}/create.XXXXXXXX)
 
 # Sanitise memory and disk size option values (must be uppercase)
-conf_VM_MEMSZ=$(echo ${conf_VM_MEMSZ} | tr gm GM)
-conf_VM_DISKSZ=$(echo ${conf_VM_DISKSZ} | tr gm GM)
+conf_VM_MEMSZ=$(echo "${conf_VM_MEMSZ:?}" | tr gm GM)
+conf_VM_DISKSZ=$(echo "${conf_VM_DISKSZ:?}" | tr gm GM)
 
 # Generate a random VM ID for the new VM and use it to derive MAC addresses
 vm_ID_RAW="$(od -A n -N 3 -t x1 /dev/urandom)"
-vm_ID="vm$(echo ${vm_ID_RAW} | tr -d ' ')"
-conf_VM_GUEST_MAC="${conf_NET_GUEST_OUI}:$(echo ${vm_ID_RAW} | sed -e 's/ /:/g')"
+vm_ID="vm$(echo "${vm_ID_RAW}" | tr -d ' ')"
+conf_VM_GUEST_MAC="${conf_NET_GUEST_OUI:?}:$(echo "${vm_ID_RAW}" | sed -e 's/ /:/g')"
 
 # Create the per-VM configuration entry
-echo "${vm_NAME}" >${prog_TMPDIR}/name
-cat >${prog_TMPDIR}/config.sh <<EOM
-conf_VM_GUEST_MAC="${conf_VM_GUEST_MAC}"
-conf_VM_MEMSZ="${conf_VM_MEMSZ}"
-conf_VM_DISKSZ="${conf_VM_DISKSZ}"
-conf_VM_VCPUS="${conf_VM_VCPUS}"
-conf_VM_DISK_DEV="/dev/${conf_LVM_VG}/${vm_ID}-disk0"
+echo "${vm_NAME}" >"${prog_TMPDIR}/name"
+cat >"${prog_TMPDIR}/config.sh" <<EOM
+conf_VM_GUEST_MAC="${conf_VM_GUEST_MAC:?}"
+conf_VM_MEMSZ="${conf_VM_MEMSZ:?}"
+conf_VM_DISKSZ="${conf_VM_DISKSZ:?}"
+conf_VM_VCPUS="${conf_VM_VCPUS:?}"
+conf_VM_DISK_DEV="/dev/${conf_LVM_VG:?}/${vm_ID}-disk0"
 EOM
 
 # Generate a systemd service file
-cat >${prog_TMPDIR}/${vm_ID}.service <<EOM
+cat >"${prog_TMPDIR}/${vm_ID}.service" <<EOM
 [Unit]
 Description=${vm_ID}
 After=network.target
@@ -106,7 +108,7 @@ ExecStart=/usr/local/sbin/vm start -S ${vm_ID}
 ExecStop=/usr/local/sbin/vm stop -S ${vm_ID}
 Type=forking
 Restart=no
-PIDFile=${conf_STATE_DIR}/${vm_ID}-qemu.pid
+PIDFile=${conf_STATE_DIR:?}/${vm_ID}-qemu.pid
 
 [Install]
 WantedBy=multi-user.target
@@ -119,26 +121,26 @@ if [ -n "${conf_LVM_POOL}" ]; then
     # Use thin provisioning from pool.
     lvcreate --quiet --yes \
         --name "${vm_ID}-disk0" \
-        --virtualsize ${conf_VM_DISKSZ} \
-        ${conf_LVM_VG}/${conf_LVM_POOL} \
+        --virtualsize "${conf_VM_DISKSZ:?}" \
+        "${conf_LVM_VG}/${conf_LVM_POOL:?}" \
         >/dev/null \
         || die "Could not create logical volume"
 else
     # Use standard LVM volume from VG
     lvcreate --quiet --yes \
         --name "${vm_ID}-disk0" \
-        --size ${conf_VM_DISKSZ} \
+        --size "${conf_VM_DISKSZ:?}" \
         --wipesignatures y \
-        ${conf_LVM_VG} \
+        "${conf_LVM_VG:?}" \
         >/dev/null \
         || die "Could not create logical volume"
 fi
 
 # Commit the configuration
-vm_DIR="${conf_DIR}/${vm_ID}"
-ln -Ts ${vm_DIR} ${vm_NAME_LINK} \
+vm_DIR="${conf_DIR:?}/${vm_ID}"
+ln -Ts "${vm_DIR}" "${vm_NAME_LINK}" \
     || die "Could not create link to '${vm_NAME}'"
-mv ${prog_TMPDIR} ${vm_DIR} \
+mv "${prog_TMPDIR}" "${vm_DIR}" \
     || die "Could not commit configuration to '${vm_DIR}'"
 echo "${vm_ID}"
 exit 0

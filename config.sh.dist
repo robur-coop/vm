@@ -1,6 +1,7 @@
 #
 # Configuration common to all VMs on this host
 #
+# shellcheck disable=SC2034 disable=SC2039
 
 # Full path to per-VM configuration directory
 conf_DIR=/etc/vm/vm.d

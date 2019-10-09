@@ -4,10 +4,12 @@
 # Show running virtual machines
 #
 
-prog_NAME=$(basename $0)
-prog_DIR=$(readlink -f $(dirname $0))
+prog_NAME=$(basename "$0")
+prog_DIR=$(readlink -f "$(dirname "$0")")
 prog_LIBDIR=${prog_DIR}
-. ${prog_LIBDIR}/functions.sh
+# shellcheck source=src/functions.sh
+. "${prog_LIBDIR}/functions.sh"
+# shellcheck source=config.sh.dist
 . /etc/vm/config.sh
 
 prog_SUMMARY="Show running virtual machines"
@@ -41,4 +43,4 @@ if [ $# -gt 0 ]; then
     esac
 fi
 
-exec ps -U ${conf_VMM_USER} "$@"
+exec ps -U "${conf_VMM_USER}" "$@"

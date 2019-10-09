@@ -4,10 +4,12 @@
 # Shutdown a VM
 #
 
-prog_NAME=$(basename $0)
-prog_DIR=$(readlink -f $(dirname $0))
+prog_NAME=$(basename "$0")
+prog_DIR=$(readlink -f "$(dirname "$0")")
 prog_LIBDIR=${prog_DIR}
-. ${prog_LIBDIR}/functions.sh
+# shellcheck source=src/functions.sh
+. "${prog_LIBDIR}/functions.sh"
+# shellcheck source=config.sh.dist
 . /etc/vm/config.sh
 
 prog_SUMMARY="Stop a virtual machine"
@@ -59,7 +61,7 @@ while getopts "SHhft:" opt; do
             ;;
     esac
 done
-shift $((${OPTIND}-1))
+shift $((OPTIND-1))
 
 [ $# -ne 1 ] && usage
 safe_lookup_vm "$1" || die "No such VM: '$1'"
@@ -68,15 +70,9 @@ if [ -z "${opt_SYSTEMD}" ]; then
     vm_is_managed "${vm_ID}" && die "VM is managed by systemd: '${vm_ID}'"
 fi
 
-if [ -n "${opt_FORCE}" ]; then
-    command=quit
-else
-    command=system_powerdown
-fi
-
 send_qemu_command()
 {
-    echo $1 | ${opt_TIMEOUT} \
+    echo "$1" | ${opt_TIMEOUT} \
         socat -,ignoreeof UNIX-CONNECT:"${conf_STATE_DIR}/${vm_ID}-qemu.sock" \
         >/dev/null
 }
@@ -95,7 +91,7 @@ else
 fi
 
 # On successful shutdown, clean up network interface and QEMU cruft
-ip link del ${vm_ID}.0
+ip link del "${vm_ID}.0"
 rm -f "${conf_STATE_DIR}/${vm_ID}-qemu.sock"
 rm -f "${conf_STATE_DIR}/${vm_ID}-vnc.sock"
 rm -f "${conf_STATE_DIR}/${vm_ID}-qemu.pid"
