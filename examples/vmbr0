@@ -1,0 +1,11 @@
+iface vmbr0 inet manual
+    up ip link add $IFACE-master address 02:00:00:00:00:01 type dummy
+    up ip link set dev $IFACE-master up
+    up ip link add $IFACE type bridge
+    up ip link set dev $IFACE-master master $IFACE
+    up ip addr add 10.11.0.1/24 dev $IFACE
+    up ip link set dev $IFACE up
+    post-up /usr/sbin/dnsmasq -9RhK -i $IFACE -F 10.11.0.16,10.11.0.254 -p 0 -x /var/run/dnsmasq-$IFACE.pid
+    pre-down kill $(cat /var/run/dnsmasq-$IFACE.pid)
+    down ip link del $IFACE
+    down ip link del $IFACE-master

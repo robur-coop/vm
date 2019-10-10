@@ -11,9 +11,9 @@ development machine.
 Therefore, it:
 
 - is strictly opinionated and minimalist,
-- only tested on Debian GNU/Linux 9.x as a host system,
+- only tested on Debian GNU/Linux 10.x as a host system,
 - only supports LVM with thin provisioning for storage,
-- only supports macvtap for networking,
+- only supports macvtap or bridged networking,
 - assumes that the underlying network is an isolated VLAN with DHCP and DNS
   service provided elsewhere.
 
@@ -23,22 +23,28 @@ Therefore, it:
 
 - Debian GNU/Linux 9.x `x86_64` as a host system.
 - LVM, `thin-provisioning-tools`, `socat`, `qemu-system-x86`.
-- `ssvncviewer` (optional).
+- `ssvnc` (optional).
 
 ### Rough steps
 
 This is for an install from scratch, as root:
 
-- Add a `_vm` user with a system UID
-- `mkdir -p /etc/vm/vm.d`
-- `mkdir -p /var/lib/vm/chroot`
-- `cp config.sh.dist /etc/vm/config.sh`, edit to suit.
-- `make install`
+```sh
+make
+sudo make install
+# READ and edit the script to suit (at least changing the volume group name)
+sudo ./install.sh
+# READ and edit /etc/vm/config.sh (at least changing the volume group name)
+```
 
-For `vm console` to work directly on the host, install `ssvncviewer`.  If you
+The defaults are to use `bridge` mode for networking, using `vmbr0`. For an
+example of how to set up `vmbr0`, see [examples/vmbr0](examples/vmbr0). You
+will want to install `dnsmasq-base`.
+
+For `vm console` to work directly on the host, install `ssvnc`.  If you
 only need to access consoles via the SSH forwarding functionality, copy
-`src/vm-console.sh` to your client host and install `ssvncviewer` there. In
-either case, you do not need the JRE dependency of `ssvncviewer`.
+`src/vm-console.sh` to your client host and install `ssvnc` there. In
+either case, you do not need the JRE dependency of `ssvnc`.
 
 ## Known issues/caveats
 
@@ -48,4 +54,3 @@ either case, you do not need the JRE dependency of `ssvncviewer`.
   operations on the same VM should not be called in parallel.
 - The current network setup relies on an undocumented external dnsmasq
   configuration, I'd like to replace this with a MirageOS unikernel.
-
