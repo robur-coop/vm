@@ -20,15 +20,19 @@ conf_VMM_USER=_vm
 conf_VMM_CHROOT=/var/lib/vm/chroot
 
 # LVM volume group for VM images
-conf_LVM_VG=tick-vg
+conf_LVM_VG=tock-vg
 
 # If set, specifies the LVM thin pool name for VM images.
 # Must be part of the same volume group as ${conf_LVM_VG}.
 # Without a thin pool set, "vm clone" is not supported.
 conf_LVM_POOL=vmpool0
 
-# Parent network interface for macvlan
-conf_NET_IF=vlan100
+# Network mode. One of "bridge" or "macvlan".
+conf_NET_MODE=bridge
+
+# For "bridge" mode: Bridge interface that VM interfaces will be added to.
+# For "macvlan" mode: Parent network interface.
+conf_NET_IF=vmbr0
 
 # Guest OUI prefix
 conf_NET_GUEST_OUI=12:00:00

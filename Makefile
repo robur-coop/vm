@@ -1,6 +1,8 @@
 PREFIX=/usr/local
 
-all:
+all: src/tap_attach
+
+CFLAGS := -std=c11 -Wall -O2
 
 PROG_MAIN=src/vm.sh
 PROG_LIB=src/functions.sh
@@ -21,8 +23,12 @@ install:
 	mkdir -p $(PREFIX)/share/vm
 	install -m 0644 $(PROG_LIB) $(PREFIX)/share/vm
 	install -m 0755 $(PROG_SUB) $(PREFIX)/share/vm
+	install -m 0755 src/tap_attach $(PREFIX)/lib/vm
 
 check:
 	shellcheck -ax ${PROG_MAIN} ${PROG_SUB}
 
-.PHONY: all install check
+clean:
+	$(RM) src/tap_attach
+
+.PHONY: all install check clean

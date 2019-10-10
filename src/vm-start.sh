@@ -29,6 +29,7 @@ will be passed on to QEMU verbatim.
 Available OPTIONs:
   -h   display this help
   -S   bypass systemd check (used to start VM as a systemd unit)
+  -v   be verbose
 
 EOM
     exit 1
@@ -43,7 +44,8 @@ cleanup()
 }
 
 opt_SYSTEMD=
-while getopts "SHh" opt; do
+opt_VERBOSE=
+while getopts "SHhv" opt; do
     case "${opt}" in
         H)
             echo "${prog_SUMMARY}"
@@ -54,6 +56,9 @@ while getopts "SHh" opt; do
             ;;
         S)
             opt_SYSTEMD=1
+            ;;
+        v)
+            opt_VERBOSE=1
             ;;
         *)
             usage
@@ -83,20 +88,33 @@ if [ -d "/sys/devices/virtual/net/${vm_NET_IF}" ]; then
     err "This probably means that the VM was not shut down correctly."
     die "Please clean up manually."
 fi
-ip link add link "${conf_NET_IF:?}" \
-    name "${vm_NET_IF}" \
-    address "${conf_VM_GUEST_MAC:?}" \
-    type macvtap mode bridge \
-    || die "Could not create network interface: \"${vm_NET_IF}\""
+if network_is_macvtap; then
+    ip link add link "${conf_NET_IF:?}" \
+        name "${vm_NET_IF}" \
+        address "${conf_VM_GUEST_MAC:?}" \
+        type macvtap mode bridge \
+        || die "Could not create network interface: \"${vm_NET_IF}\""
+elif network_is_bridge; then
+    ip tuntap add mode tap name "${vm_NET_IF}" \
+        || die "Could not create network interface: \"${vm_NET_IF}\""
+    ip link set "${vm_NET_IF}" master "${conf_NET_IF:?}" \
+        || die "Could not add network interface \"${vm_NET_IF}\" to bridge \"${conf_NET_IF}\""
+else
+    die "Invalid conf_NET_MODE"
+fi
 trap cleanup 0 INT TERM
 ip link set dev "${vm_NET_IF}" up \
     || die "Could not bring up network interface: \"${vm_NET_IF}\""
-vm_NET_TAP_DEV=/dev/"$(basename "$(echo "/sys/devices/virtual/net/${vm_NET_IF}/tap"*)")"
-if [ ! -c "${vm_NET_TAP_DEV}" ]; then
-    die "TAP device \"${vm_NET_TAP_DEV}\" for interface \"${vm_NET_IF}\" does not exist"
+if network_is_macvtap; then
+    vm_NET_TAP_DEV=/dev/"$(basename "$(echo "/sys/devices/virtual/net/${vm_NET_IF}/tap"*)")"
+    if [ ! -c "${vm_NET_TAP_DEV}" ]; then
+        die "TAP device \"${vm_NET_TAP_DEV}\" for interface \"${vm_NET_IF}\" does not exist"
+    fi
+    [ -n "${opt_VERBOSE}" ] && \
+        info "Using interface ${vm_NET_IF}<${conf_VM_GUEST_MAC}>@${conf_NET_IF}, macvtap /dev/${vm_NET_TAP_DEV}"
+elif network_is_bridge; then
+        info "Using interface ${vm_NET_IF}<${conf_VM_GUEST_MAC}>@${conf_NET_IF}"
 fi
-
-### echo "network: Using macvtap ${vm_NET_IF}<${conf_VM_GUEST_MAC}>, /dev/${vm_NET_TAP_DEV}"
 
 if [ ${conf_VM_VCPUS:?} -gt 1 ]; then
     qemu_SMP="-smp ${conf_VM_VCPUS}"
@@ -104,35 +122,46 @@ else
     qemu_SMP=
 fi
 
-# XXX For non-SCSI (virtio-blk) drive use:
-# -drive if=virtio,file=${conf_VM_DISK_DEV},format=raw,discard=on
 run_qemu()
 {
-    umask 077 || return 1
-    cd / || return 1
-    exec unshare -n qemu-system-x86_64 -daemonize \
-        -name "${vm_ID}" \
-        -machine q35 \
-        -cpu host,migratable=no,+invtsc \
-        -enable-kvm \
-        ${qemu_SMP} \
-        -m "${conf_VM_MEMSZ:?}" \
-        -net "nic,model=virtio,macaddr=${conf_VM_GUEST_MAC:?}" \
-        -net tap,fd=3 \
-        -drive "if=none,id=sda,file=${conf_VM_DISK_DEV:?},format=raw,discard=on" \
-        -device virtio-scsi-pci,id=scsi0 \
-        -device scsi-hd,drive=sda \
-        -device virtio-rng-pci \
-        -monitor "unix:${conf_STATE_DIR:?}/${vm_ID}-qemu.sock,server,nowait" \
-        -vnc "unix:${conf_STATE_DIR:?}/${vm_ID}-vnc.sock" \
-        -pidfile "${conf_STATE_DIR:?}/${vm_ID}-qemu.pid" \
-        -chroot "${conf_VMM_CHROOT:?}" \
-        -runas "${conf_VMM_USER:?}" \
-        "$@" \
-         3<>"${vm_NET_TAP_DEV}" \
-    || die "Could not exec qemu-system-x86_64"
+    # shellcheck disable=SC2154 disable=SC2086
+    exec \
+    ${_attach} \
+    unshare -n \
+    qemu-system-x86_64 \
+    -daemonize \
+    -name "${vm_ID}" \
+    -machine q35 \
+    -cpu host,migratable=no,+invtsc \
+    -enable-kvm \
+    ${qemu_SMP} \
+    -m "${conf_VM_MEMSZ:?}" \
+    -netdev tap,id=net0,fd=3 \
+    -device "virtio-net-pci,netdev=net0,mac=${conf_VM_GUEST_MAC:?}" \
+    -drive "if=none,id=sda,file=${conf_VM_DISK_DEV:?},format=raw,discard=on" \
+    -device virtio-scsi-pci,id=scsi0 \
+    -device scsi-hd,drive=sda \
+    -device virtio-rng-pci \
+    -monitor "unix:${conf_STATE_DIR:?}/${vm_ID}-qemu.sock,server,nowait" \
+    -vnc "unix:${conf_STATE_DIR:?}/${vm_ID}-vnc.sock" \
+    -pidfile "${conf_STATE_DIR:?}/${vm_ID}-qemu.pid" \
+    -chroot "${conf_VMM_CHROOT:?}" \
+    -runas "${conf_VMM_USER:?}" \
+    "$@"
 }
 
-### echo "qemu: ${qemu_OPT}"
+umask 077 || die "umask failed"
+cd / || die "cd failed"
 
-run_qemu "$@"
+# This rigmarole is so that we can pass both a macvtap device and a
+# conventional tap device to QEMU in the same way, i.e. as file descriptor 3.
+# So much for Linux API consitency.
+if network_is_macvtap; then
+    [ -n "${opt_VERBOSE}" ] && set -x
+    _attach="" run_qemu "$@" 3<>"${vm_NET_TAP_DEV}"
+elif network_is_bridge; then
+    [ -n "${opt_VERBOSE}" ] && set -x
+    _attach="/usr/local/lib/vm/tap_attach ${vm_NET_IF:?}" run_qemu "$@"
+else
+    die "Invalid conf_NET_MODE"
+fi

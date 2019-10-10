@@ -6,12 +6,17 @@
 
 err()
 {
-    echo "${prog_NAME:?}: ERROR: " "$@" 1>&2
+    echo "${prog_NAME:?}: ERROR: $*" 1>&2
 }
 
 warn()
 {
-    echo "${prog_NAME:?}: WARNING: " "$@" 1>&2
+    echo "${prog_NAME:?}: WARNING: $*" 1>&2
+}
+
+info()
+{
+    echo "${prog_NAME:?}: $*"
 }
 
 die()
@@ -67,4 +72,14 @@ vm_is_managed()
 {
     [ $# -eq 1 ] || die "vm_is_managed(): missing VMID"
     systemctl is-enabled "$1.service" >/dev/null 2>&1
+}
+
+network_is_bridge()
+{
+    [ "${conf_NET_MODE}" = "bridge" ]
+}
+
+network_is_macvtap()
+{
+    [ "${conf_NET_MODE}" = "macvtap" ]
 }
