@@ -27,11 +27,11 @@ conf_LVM_VG=tock-vg
 # Without a thin pool set, "vm clone" is not supported.
 conf_LVM_POOL=vmpool0
 
-# Network mode. One of "bridge" or "macvlan".
+# Network mode. One of "bridge" or "macvtap".
 conf_NET_MODE=bridge
 
 # For "bridge" mode: Bridge interface that VM interfaces will be added to.
-# For "macvlan" mode: Parent network interface.
+# For "macvtap" mode: Parent network interface.
 conf_NET_IF=vmbr0
 
 # Guest OUI prefix

@@ -111,7 +111,7 @@ if network_is_macvtap; then
         die "TAP device \"${vm_NET_TAP_DEV}\" for interface \"${vm_NET_IF}\" does not exist"
     fi
     [ -n "${opt_VERBOSE}" ] && \
-        info "Using interface ${vm_NET_IF}<${conf_VM_GUEST_MAC}>@${conf_NET_IF}, macvtap /dev/${vm_NET_TAP_DEV}"
+        info "Using interface ${vm_NET_IF}<${conf_VM_GUEST_MAC}>@${conf_NET_IF}, macvtap ${vm_NET_TAP_DEV}"
 elif network_is_bridge; then
         info "Using interface ${vm_NET_IF}<${conf_VM_GUEST_MAC}>@${conf_NET_IF}"
 fi
