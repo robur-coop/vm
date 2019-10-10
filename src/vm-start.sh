@@ -113,6 +113,7 @@ if network_is_macvtap; then
     [ -n "${opt_VERBOSE}" ] && \
         info "Using interface ${vm_NET_IF}<${conf_VM_GUEST_MAC}>@${conf_NET_IF}, macvtap ${vm_NET_TAP_DEV}"
 elif network_is_bridge; then
+    [ -n "${opt_VERBOSE}" ] && \
         info "Using interface ${vm_NET_IF}<${conf_VM_GUEST_MAC}>@${conf_NET_IF}"
 fi
 
@@ -155,7 +156,7 @@ cd / || die "cd failed"
 
 # This rigmarole is so that we can pass both a macvtap device and a
 # conventional tap device to QEMU in the same way, i.e. as file descriptor 3.
-# So much for Linux API consitency.
+# So much for Linux API consistency.
 if network_is_macvtap; then
     [ -n "${opt_VERBOSE}" ] && set -x
     _attach="" run_qemu "$@" 3<>"${vm_NET_TAP_DEV}"
