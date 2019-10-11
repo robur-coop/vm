@@ -21,17 +21,19 @@ ${prog_SUMMARY}
 
 usage: ${prog_NAME} [ OPTIONS ... ] NAME | VMID IMAGE
 
-Export the virtual machine specified by NAME or VMID to the compressed QCOW2
-format file specified by IMAGE.
+Export the virtual machine specified by NAME or VMID to the QCOW2 format
+file specified by IMAGE.
 
 Available OPTIONs:
   -h           display this help
+  -c           compress the QCOW2 IMAGE
 
 EOM
     exit 1
 }
 
-while getopts "Hh" opt; do
+opt_COMPRESS=
+while getopts "cHh" opt; do
     case "${opt}" in
         H)
             echo "${prog_SUMMARY}"
@@ -39,6 +41,9 @@ while getopts "Hh" opt; do
             ;;
         h)
             usage
+            ;;
+        c)
+            opt_COMPRESS=-c
             ;;
         *)
             usage
@@ -54,7 +59,8 @@ vm_is_running "${vm_ID}" && die "VM is running: '${vm_ID}'"
 # shellcheck disable=SC1090
 . "${vm_DIR}/config.sh"
 # shellcheck disable=SC2154
-qemu-img convert -O qcow2 -T none -t none -c "${conf_VM_DISK_DEV}" "$2" \
+qemu-img convert -O qcow2 ${opt_COMPRESS} -T none -t none \
+    "${conf_VM_DISK_DEV}" "$2" \
     || die "qemu-img convert failed"
 
 exit 0
