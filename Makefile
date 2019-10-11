@@ -16,7 +16,9 @@ PROG_SUB=src/vm-clone.sh \
 	 src/vm-rename.sh \
 	 src/vm-start.sh \
 	 src/vm-stop.sh \
-	 src/vm-top.sh
+	 src/vm-top.sh \
+	 src/vm-import.sh \
+	 src/vm-export.sh
 
 install:
 	install -m 0755 $(PROG_MAIN) $(PREFIX)/sbin/vm
