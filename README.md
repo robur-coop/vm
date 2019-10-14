@@ -23,6 +23,7 @@ Therefore, it:
 
 - Debian GNU/Linux 10.x `x86_64` as a host system.
 - LVM, `thin-provisioning-tools`, `socat`, `qemu-system-x86`.
+- `rng-tools5` (recommended, see below).
 - `ssvnc` (optional).
 
 ### Rough steps
@@ -56,7 +57,8 @@ either case, you do not need the JRE dependency of `ssvnc`.
 - The current network setup relies on an undocumented external dnsmasq
   configuration, I'd like to replace this with a MirageOS unikernel.
 - Running VMs regularly will quickly exhaust the host system kernel's entropy
-  pool.  Install `rng-tools5` to start an `rngd` service feeding entropy from
-  hardware sources into the host kernel's entropy pool. The guest VM is
+  pool, leading to unexpected hangs of user processes trying to read
+  /dev/random.  Install `rng-tools5` to start an `rngd` service feeding entropy
+  from hardware sources into the host kernel's entropy pool. The guest VM is
   configured with a `virtio-rng` device which the guest OS should use as an
   entropy source.
