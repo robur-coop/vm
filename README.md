@@ -55,3 +55,8 @@ either case, you do not need the JRE dependency of `ssvnc`.
   operations on the same VM should not be called in parallel.
 - The current network setup relies on an undocumented external dnsmasq
   configuration, I'd like to replace this with a MirageOS unikernel.
+- Running VMs regularly will quickly exhaust the host system kernel's entropy
+  pool.  Install `rng-tools5` to start an `rngd` service feeding entropy from
+  hardware sources into the host kernel's entropy pool. The guest VM is
+  configured with a `virtio-rng` device which the guest OS should use as an
+  entropy source.
