@@ -21,7 +21,7 @@ Therefore, it:
 
 ### Dependencies
 
-- Debian GNU/Linux 9.x `x86_64` as a host system.
+- Debian GNU/Linux 10.x `x86_64` as a host system.
 - LVM, `thin-provisioning-tools`, `socat`, `qemu-system-x86`.
 - `ssvnc` (optional).
 
@@ -38,8 +38,7 @@ sudo ./install.sh
 ```
 
 The defaults are to use `bridge` mode for networking, using `vmbr0`. For an
-example of how to set up `vmbr0`, see [examples/vmbr0](examples/vmbr0). You
-will want to install `dnsmasq-base`.
+example of how to set up `vmbr0`, see [examples/vmbr0](examples/vmbr0).
 
 For `vm console` to work directly on the host, install `ssvnc`.  If you
 only need to access consoles via the SSH forwarding functionality, copy
@@ -49,6 +48,8 @@ either case, you do not need the JRE dependency of `ssvnc`.
 ## Known issues/caveats
 
 - Not much documentation, but the `vm` commands should be self-explanatory.
+- Due to the need to manipulate LVM volumes, most `vm` commands must be run as
+  root.
 - `vm create` and `vm clone` _should_ be safe to execute in parallel, but this
   has not (yet) been extensively tested under load. All other _VM-specific_
   operations on the same VM should not be called in parallel.
