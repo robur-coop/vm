@@ -64,7 +64,7 @@ type vmid_to_dns >/dev/null 2>&1 \
 vmid_to_dns
 [ -z "${vm_DNS_NAME}" ] && die "Cannot translate '${vm_ID}' to DNS name"
 
-while ! vm_IP_ADDRESS=$(host -t A -4 -r "${vm_DNS_NAME}"); do
+while ! vm_IP_ADDRESS=$(host -t A -4 "${vm_DNS_NAME}"); do
     sleep 1
 done
 vm_IP_ADDRESS="$(echo "${vm_IP_ADDRESS}" | cut -d' ' -f4)"
